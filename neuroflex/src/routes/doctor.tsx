@@ -1,0 +1,3 @@
+import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { AppShell, Protected } from "@/components/app-shell";
+export const Route=createFileRoute("/doctor")({head:()=>({meta:[{title:"Doctor workspace — NeuroFlex"},{name:"description",content:"Monitor patient movement analysis, recovery progress, and exercise adherence."},{property:"og:title",content:"Doctor workspace — NeuroFlex"},{property:"og:description",content:"Clinical recovery insights and patient management."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary_large_image"}]}),component:()=> <Protected role="doctor"><AppShell role="doctor"><Outlet/></AppShell></Protected>});

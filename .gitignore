@@ -1,0 +1,26 @@
+# ---- not part of this repo ----
+frontend/
+*.zip
+
+# ---- Python ----
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# ---- generated files (recreate with the commands in README) ----
+ml/data/raw_readings.csv
+ml/rehab_models.joblib
+backend/rehab.db
+
+# ---- secrets ----
+.env
+.env.*
+!.env.example
+
+# ---- Node / editors / OS ----
+node_modules/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
