@@ -50,6 +50,7 @@ class Patient(Base):
     affected_hand = Column(String, default="right")
     stroke_date = Column(Date)
     status = Column(String, default="active")      # "active" or "recovered"
+    group = Column(String, default="patient")      # "patient" or "healthy" (healthy volunteer)
     device_id = Column(String, unique=True)        # which glove this patient uses
 
     user = relationship("User", foreign_keys=[user_id])
@@ -66,10 +67,11 @@ class GloveSession(Base):
     patient_id = Column(Integer, ForeignKey("patients.id"), nullable=False)
     recorded_at = Column(DateTime, default=datetime.now)
     recovery_score = Column(Float)
-    finger_status = Column(JSON)         # {"thumb": "severe", ...}
-    range_of_motion = Column(JSON)       # {"thumb": 21.2, ...}  degrees
+    finger_status = Column(JSON)         # {"index": "severe", ...}
+    range_of_motion = Column(JSON)       # {"index": 21.2, ...}  degrees
     features = Column(JSON)              # all computed features
     suggested_exercises = Column(JSON)   # list of exercise names from the rules
+    data_source = Column(String, default="glove")   # "glove", "simulator" or "synthetic"
 
     patient = relationship("Patient", back_populates="sessions")
 
@@ -80,7 +82,7 @@ class Exercise(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True, nullable=False)
     description = Column(Text)
-    target_fingers = Column(String)      # e.g. "thumb,index"
+    target_fingers = Column(String)      # e.g. "index,middle"
 
 
 class Prescription(Base):
@@ -106,6 +108,17 @@ class ExerciseLog(Base):
     done_on = Column(Date, nullable=False)
 
     prescription = relationship("Prescription", back_populates="logs")
+
+
+class GloveDevice(Base):
+    """A physical glove (ESP32). Holds its calibration so raw readings can be
+    turned into accurate bend angles. Created automatically the first time
+    the glove sends data."""
+    __tablename__ = "glove_devices"
+    device_id = Column(String, primary_key=True)
+    calibration = Column(JSON)           # {"flat": [5 ints], "bent": [5 ints]} or None
+    calibrated_at = Column(DateTime)
+    first_seen = Column(DateTime, default=datetime.now)
 
 
 class Message(Base):

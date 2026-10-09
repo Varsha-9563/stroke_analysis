@@ -11,7 +11,8 @@ import joblib
 import numpy as np
 import pandas as pd
 
-FINGERS = ["thumb", "index", "middle", "ring", "little"]
+FINGERS = ["index", "middle", "ring", "little"]   # 4 flex sensors (no thumb)
+N = len(FINGERS)
 FS = 50                         # samples per second (same as the ESP32 firmware)
 VCC, R_FIXED = 3.3, 47_000      # voltage divider on the glove
 R_FLAT, R_BENT = 25_000, 100_000  # glove calibration (replace with real values later)
@@ -21,16 +22,29 @@ MODEL_PATH = Path(__file__).resolve().parent.parent / "ml" / "rehab_models.jobli
 _models = joblib.load(MODEL_PATH)
 
 
-def adc_to_angle(adc):
-    """ADC count (0-4095) -> finger bend angle in degrees."""
-    adc = np.clip(np.asarray(adc, dtype=float), 1, 4095)
+def adc_to_angle(adc, calibration=None):
+    """ADC count (0-4095) -> finger bend angle in degrees.
+
+    calibration = {"flat": [5 ADC values], "bent": [5 ADC values]} measured on THIS
+    glove (hand flat, then fingers bent to ~90 degrees). It is a straight-line map
+    per finger, so it works whether a sensor's value goes UP or DOWN when bent and
+    whatever resistor is used. Without calibration we fall back to the ideal
+    voltage-divider formula the synthetic training data was made with.
+    """
+    adc = np.asarray(adc, dtype=float)
+    if calibration:
+        flat = np.asarray(calibration["flat"], dtype=float)
+        bent = np.asarray(calibration["bent"], dtype=float)
+        span = np.where(np.abs(bent - flat) < 1, 1, bent - flat)  # avoid divide-by-zero
+        return np.clip((adc - flat) / span * MAX_ANGLE, -10, 120)
+    adc = np.clip(adc, 1, 4095)
     v = adc / 4095 * VCC
     r = R_FIXED * (VCC / v - 1)
     return (r - R_FLAT) / (R_BENT - R_FLAT) * MAX_ANGLE
 
 
 def extract_features(angles):
-    """angles: (n_samples, 5) in degrees -> dict of session features."""
+    """angles: (n_samples, N) in degrees -> dict of session features."""
     feats = {}
     kernel = np.ones(5) / 5
     for i, f in enumerate(FINGERS):
@@ -61,10 +75,12 @@ def suggest_exercises(feats, status):
         out.append("Passive range of motion")
     if np.mean([feats[f"{f}_min_angle"] for f in FINGERS]) > 15:
         out.append("Finger extension stretch")    # hand can't fully open
-    if status["thumb"] != "good":
-        out.append("Thumb opposition")
+    if any(status[f] != "good" for f in ["index", "middle"]):
+        out.append("Fingertip pinch")            # index/middle precision
     if any(status[f] != "good" for f in ["ring", "little"]):
         out.append("Finger isolation lifts")
+    if len(weak) == len(FINGERS) and "Passive range of motion" not in out:
+        out.append("Finger taps")                # all four fingers need coordination work
     if np.mean([feats[f"{f}_jerkiness"] for f in FINGERS]) > 6:
         out.append("Soft ball squeeze")           # jerky, uncontrolled movement
     if len(out) < 2:
@@ -72,11 +88,11 @@ def suggest_exercises(feats, status):
     return out
 
 
-def analyze_session(samples):
-    """samples: list of [t_ms, thumb, index, middle, ring, little] (raw ADC).
+def analyze_session(samples, calibration=None):
+    """samples: list of [t_ms, index, middle, ring, little] (raw ADC).
     Returns the full analysis the frontend will show."""
     arr = np.asarray(samples, dtype=float)
-    angles = adc_to_angle(arr[:, 1:6])
+    angles = adc_to_angle(arr[:, 1:N + 1], calibration)
     feats = extract_features(angles)
 
     X = pd.DataFrame([feats])[_models["features"]]

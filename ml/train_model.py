@@ -15,7 +15,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.model_selection import GroupKFold, cross_val_score
 
-FINGERS = ["thumb", "index", "middle", "ring", "little"]
+FINGERS = ["index", "middle", "ring", "little"]   # 4 flex sensors (no thumb)
 
 df = pd.read_csv("data/session_features.csv")
 label_cols = ["recovery_score"] + [f"{f}_status" for f in FINGERS]

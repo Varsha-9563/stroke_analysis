@@ -21,7 +21,7 @@ rows = df[df["session_id"] == SESSION_ID]
 if rows.empty:
     sys.exit(f"No session called {SESSION_ID}")
 
-samples = rows[["t_ms", "thumb", "index", "middle", "ring", "little"]].values.tolist()
+samples = rows[["t_ms", "index", "middle", "ring", "little"]].values.tolist()
 resp = requests.post("http://127.0.0.1:8000/api/analyze-session",
                      json={"device_id": "glove-01", "samples": samples})
 resp.raise_for_status()

@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Activity, Bell, CircleUserRound, House, LogOut, Menu, Users, X } from "lucide-react";
+import { Activity, Bell, CircleUserRound, Hand, House, LogOut, Menu, Users, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import { Brand, Button } from "./ui";
 import { cn } from "@/lib/utils";
@@ -25,7 +25,12 @@ export function AppShell({ role, children }: { role: Role; children: ReactNode }
   const [open, setOpen] = useState(false);
   const nav = role === "doctor"
     ? [{ label: "Patients", icon: Users, to: "/doctor" as const }]
-    : [{ label: "My journey", icon: House, to: "/patient" as const }];
+    : [
+        { label: "My journey", icon: House, to: "/patient" as const },
+        { label: "Glove session", icon: Hand, to: "/patient/glove" as const },
+        { label: "Recovery analytics", icon: Activity, to: "/patient/analytics" as const },
+      ];
+  const here = pathname.replace(/\/$/, "") || "/";
   const logout = () => {
     localStorage.clear();
     navigate({ to: "/login" });
@@ -35,8 +40,8 @@ export function AppShell({ role, children }: { role: Role; children: ReactNode }
       <div className="sidebar-top"><Brand /><Button variant="ghost" className="mobile-close" aria-label="Close navigation" onClick={() => setOpen(false)}><X size={19} /></Button></div>
       <div className="portal-label">{role === "doctor" ? "Clinical workspace" : "Recovery portal"}</div>
       <nav className="side-nav" aria-label="Primary navigation">
-        {nav.map(({ label, icon: Icon, to }) => <Link key={to} to={to} activeOptions={{ exact: true }} className={cn("side-link", pathname === to && "active")} onClick={() => setOpen(false)}><Icon size={18} /><span>{label}</span></Link>)}
-        <span className="side-link side-link-muted"><Activity size={18} /><span>Recovery analytics</span><small>Soon</small></span>
+        {nav.map(({ label, icon: Icon, to }) => <Link key={to} to={to} activeOptions={{ exact: true }} className={cn("side-link", here === to && "active")} onClick={() => setOpen(false)}><Icon size={18} /><span>{label}</span></Link>)}
+        {role === "doctor" && <span className="side-link side-link-muted"><Activity size={18} /><span>Recovery analytics</span><small>Soon</small></span>}
         <span className="side-link side-link-muted"><Bell size={18} /><span>Notifications</span><small>Soon</small></span>
       </nav>
       <div className="sidebar-footer"><div className="profile-chip"><CircleUserRound size={28} /><div><strong>{(typeof window !== "undefined" && localStorage.getItem("name")) || (role === "doctor" ? "Doctor" : "Patient")}</strong><span>{role === "doctor" ? "Doctor" : "Patient"} · secure session</span></div></div><Button variant="ghost" className="signout" onClick={logout}><LogOut size={17} /> Sign out</Button></div>

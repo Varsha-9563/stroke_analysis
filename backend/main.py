@@ -9,17 +9,27 @@ from datetime import date, timedelta
 from typing import List, Optional
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from analysis import analyze_session
+from analytics import router as analytics_router
 from auth import (create_token, get_current_user, hash_password, require_doctor,
                   require_patient, verify_password)
-from database import (Exercise, ExerciseLog, GloveSession, Message, Patient,
-                      Prescription, User, create_tables, get_db)
+from database import (Exercise, ExerciseLog, GloveDevice, GloveSession, Message,
+                      Patient, Prescription, User, create_tables, get_db)
 from emailer import send_email
+import csv
+import io
+
+from data_logger import (ALL_SESSIONS, HEALTHY_REFERENCE, SESSION_COLUMNS, file_info, log_session,
+                         patient_code, readings_file, sessions_file)
+from fastapi.responses import StreamingResponse
+from healthy import baseline as healthy_baseline
+from glove import router as glove_router
 
 create_tables()
 app = FastAPI(title="NeuroFlex Rehab Glove API")
@@ -34,8 +44,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(glove_router)       # live glove streaming + recording (glove.py)
+app.include_router(analytics_router)   # weekly / monthly / yearly reports (analytics.py)
 
-FINGERS = ["thumb", "index", "middle", "ring", "little"]
+FINGERS = ["index", "middle", "ring", "little"]   # 4 flex sensors (no thumb)
 HEALTHY_ROM = 80.0  # degrees of range of motion treated as 100% for a finger
 
 
@@ -187,6 +199,7 @@ def my_patients(doctor: User = Depends(require_doctor), db: Session = Depends(ge
             "full_name": p.user.name,
             "email": p.user.email,
             "status": p.status,
+            "group": p.group or "patient",
             "latest_recovery_percent": latest.recovery_score if latest else None,
             "first_recovery_percent": p.sessions[0].recovery_score if p.sessions else None,
             "sessions_count": len(p.sessions),
@@ -206,6 +219,7 @@ def patient_summary(patient_id: int, doctor: User = Depends(require_doctor),
         "patient_name": p.user.name,
         "email": p.user.email,
         "status": p.status,
+        "group": p.group or "patient",
         "doctor_name": p.doctor.name,
         "current_exercise_ids": [rx.exercise_id for rx in active],
         "current_notes": next((rx.notes for rx in active if rx.notes), ""),
@@ -348,18 +362,99 @@ def patient_recovery(user: User = Depends(require_patient), db: Session = Depend
             for s in p.sessions]
 
 
+# ================================================================ healthy volunteers
+class GroupBody(BaseModel):
+    group: str      # "patient" or "healthy"
+
+
+@app.put("/api/doctor/patients/{patient_id}/group")
+def set_group(patient_id: int, body: GroupBody, doctor: User = Depends(require_doctor),
+              db: Session = Depends(get_db)):
+    """Mark someone as a healthy volunteer (their recordings build the healthy reference)
+    or back to a stroke patient. Only affects NEW recordings in the CSV files."""
+    if body.group not in ("patient", "healthy"):
+        raise HTTPException(400, "group must be 'patient' or 'healthy'")
+    p = get_patient_for_doctor(db, patient_id, doctor)
+    p.group = body.group
+    db.commit()
+    return {"ok": True, "group": p.group}
+
+
+@app.get("/api/healthy-reference")
+def healthy_reference(user: User = Depends(get_current_user)):
+    return healthy_baseline() or {"people": 0, "recordings": 0}
+
+
+# ================================================================ CSV downloads
+def _csv_response(patient_id: int, kind: str):
+    if kind not in ("sessions", "readings"):
+        raise HTTPException(400, "kind must be 'sessions' or 'readings'")
+    path = sessions_file(patient_id) if kind == "sessions" else readings_file(patient_id)
+    if not path.exists():
+        raise HTTPException(404, "No recordings saved yet")
+    return FileResponse(path, media_type="text/csv", filename=path.name)
+
+
+@app.get("/api/patient/data")
+def my_data_info(user: User = Depends(require_patient), db: Session = Depends(get_db)):
+    return file_info(get_my_patient(db, user).id)
+
+
+@app.get("/api/patient/data/{kind}.csv")
+def my_data_csv(kind: str, user: User = Depends(require_patient), db: Session = Depends(get_db)):
+    return _csv_response(get_my_patient(db, user).id, kind)
+
+
+@app.get("/api/doctor/patients/{patient_id}/data")
+def patient_data_info(patient_id: int, doctor: User = Depends(require_doctor), db: Session = Depends(get_db)):
+    return file_info(get_patient_for_doctor(db, patient_id, doctor).id)
+
+
+@app.get("/api/doctor/patients/{patient_id}/data/{kind}.csv")
+def patient_data_csv(patient_id: int, kind: str, doctor: User = Depends(require_doctor),
+                     db: Session = Depends(get_db)):
+    return _csv_response(get_patient_for_doctor(db, patient_id, doctor).id, kind)
+
+
+def _filtered_csv(path, keep, filename):
+    """Stream a CSV, keeping only rows where keep(row) is True."""
+    if not path.exists():
+        raise HTTPException(404, "No recordings saved yet")
+    out = io.StringIO()
+    w = csv.DictWriter(out, fieldnames=SESSION_COLUMNS, extrasaction="ignore")
+    w.writeheader()
+    with open(path, encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            if keep(row):
+                w.writerow(row)
+    return StreamingResponse(iter([out.getvalue()]), media_type="text/csv",
+                             headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
+@app.get("/api/doctor/data/all_sessions.csv")
+def doctor_all_sessions(doctor: User = Depends(require_doctor), db: Session = Depends(get_db)):
+    """Every recording of this doctor's patients and healthy volunteers, one row each."""
+    mine = {patient_code(p.id) for p in db.query(Patient).filter(Patient.doctor_id == doctor.id)}
+    return _filtered_csv(ALL_SESSIONS, lambda r: r["patient_id"] in mine, "all_sessions.csv")
+
+
+@app.get("/api/doctor/data/healthy_reference.csv")
+def doctor_healthy_csv(doctor: User = Depends(require_doctor)):
+    return _filtered_csv(HEALTHY_REFERENCE, lambda r: True, "healthy_reference.csv")
+
+
 # ================================================================ glove
 class GloveData(BaseModel):
     device_id: str = "glove-01"
-    # each sample: [t_ms, thumb, index, middle, ring, little]  (raw ADC 0-4095)
+    # each sample: [t_ms, index, middle, ring, little]  (raw ADC 0-4095)
     samples: List[List[float]]
 
 
 def check_samples(samples):
     if len(samples) < 250:  # less than 5 seconds at 50 Hz
         raise HTTPException(400, "Need at least 5 seconds (250 samples) of glove data")
-    if any(len(s) != 6 for s in samples):
-        raise HTTPException(400, "Each sample must be [t_ms, thumb, index, middle, ring, little]")
+    if any(len(s) != len(FINGERS) + 1 for s in samples):
+        raise HTTPException(400, "Each sample must be [t_ms, index, middle, ring, little]")
 
 
 @app.post("/api/glove/sessions")
@@ -369,9 +464,11 @@ def glove_upload(data: GloveData, db: Session = Depends(get_db)):
     if not p:
         raise HTTPException(404, f"No patient is assigned glove '{data.device_id}'")
     check_samples(data.samples)
-    result = analyze_session(data.samples)
+    dev = db.get(GloveDevice, data.device_id)
+    result = analyze_session(data.samples, dev.calibration if dev else None)
     s = GloveSession(
         patient_id=p.id,
+        data_source="glove",
         recovery_score=result["recovery_score"],
         finger_status=result["finger_status"],
         range_of_motion=result["range_of_motion"],
@@ -380,6 +477,8 @@ def glove_upload(data: GloveData, db: Session = Depends(get_db)):
     )
     db.add(s)
     db.commit()
+    db.refresh(p)
+    log_session(p, s, data.samples, result, dev.calibration if dev else None)   # append to CSV files
     return {"patient": p.user.name, "session_id": s.id, **{k: result[k] for k in
             ("recovery_score", "finger_status", "range_of_motion", "suggested_exercises")}}
 

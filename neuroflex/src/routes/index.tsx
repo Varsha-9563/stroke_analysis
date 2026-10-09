@@ -16,13 +16,13 @@ export const Route = createFileRoute("/")({
 });
 
 const steps = [
-  ["01", "Capture", "Five flex sensors capture finger movement.", Hand],
+  ["01", "Capture", "Four flex sensors capture index, middle, ring and pinky movement.", Hand],
   ["02", "Connect", "The smart glove sends readings wirelessly.", Bluetooth],
   ["03", "Analyze", "Services process movement data with AI assistance.", BrainCircuit],
   ["04", "Understand", "Doctors review trends and finger performance.", ChartNoAxesCombined],
   ["05", "Rehabilitate", "Exercises are assigned and tracked each day.", HeartPulse],
 ] as const;
-const demoFingers = [["Thumb", 42, 68], ["Index", 36, 61], ["Middle", 29, 56], ["Ring", 24, 49], ["Little", 19, 41]] as const;
+const demoFingers = [["Index", 36, 61], ["Middle", 29, 56], ["Ring", 24, 49], ["Pinky", 19, 41]] as const;
 
 function LandingPage() {
   return <div className="landing-page">
@@ -30,7 +30,7 @@ function LandingPage() {
     <main>
       <section className="hero-section">
         <div className="hero-copy"><span className="eyebrow">AI-assisted movement analysis</span><h1>Smarter Hand Rehabilitation.<br/><span>Measurable Recovery.</span></h1><p>Monitor finger movement, understand recovery progress, and help doctors make informed rehabilitation decisions through intelligent hand-movement analysis.</p><div className="hero-actions"><a href="#platform" className="button button-primary">Explore platform <ArrowRight size={17} /></a><Link to="/login" search={{ role: "doctor" }} className="button button-secondary">Doctor login</Link><Link to="/login" search={{ role: "patient" }} className="button button-ghost">Patient login</Link></div><p className="decision-note"><Check size={15} /> Decision support for rehabilitation teams — not a diagnostic tool.</p></div>
-        <div className="hero-visual"><img src={gloveImage} width={1200} height={1008} alt="Smart rehabilitation glove with five finger sensors"/><div className="sensor-card"><span>Sensor matrix</span><strong>5-channel</strong><small>Finger movement capture</small></div><div className="signal-pill"><i /> Glove connection ready</div></div>
+        <div className="hero-visual"><img src={gloveImage} width={1200} height={1008} alt="Smart rehabilitation glove with four finger sensors"/><div className="sensor-card"><span>Sensor matrix</span><strong>4-channel</strong><small>Finger movement capture</small></div><div className="signal-pill"><i /> Glove connection ready</div></div>
       </section>
 
       <section id="platform" className="process-section"><div className="section-heading"><span className="eyebrow">From movement to insight</span><h2>A connected recovery workflow</h2><p>Every glove session becomes clear, reviewable information for the people guiding recovery.</p></div><div className="process-grid">{steps.map(([n,title,copy,Icon]) => <article key={n} className="process-step"><div className="step-top"><span>{n}</span><Icon size={20}/></div><h3>{title}</h3><p>{copy}</p></article>)}</div></section>

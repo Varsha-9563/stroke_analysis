@@ -6,7 +6,7 @@ values per finger), so the whole pipeline (backend, features, ML, dashboard)
 can be built now and switched to real glove data later.
 
 Outputs:
-  data/raw_readings.csv     patient_id, session_id, day, t_ms, thumb..little (ADC 0-4095)
+  data/raw_readings.csv     patient_id, session_id, day, t_ms, index, middle, ring, little (ADC 0-4095)
   data/session_features.csv one row per session: features + labels
 
 Run:  python simulate_dataset.py
@@ -17,7 +17,8 @@ import pandas as pd
 
 rng = np.random.default_rng(42)
 
-FINGERS = ["thumb", "index", "middle", "ring", "little"]
+FINGERS = ["index", "middle", "ring", "little"]   # 4 flex sensors (no thumb)
+N = len(FINGERS)
 FS = 50                       # Hz, same as firmware
 VCC, R_FIXED = 3.3, 47_000    # voltage divider
 R_FLAT, R_BENT = 25_000, 100_000   # typical 2.2" flex sensor: flat vs ~90 deg
@@ -43,9 +44,9 @@ def adc_to_angle(adc, r_flat=R_FLAT, r_bent=R_BENT):
 # ---------------------------------------------------------------- patient model
 def simulate_session(impairment, duration_s=20):
     """Protocol: open-close the fist repeatedly for `duration_s` seconds.
-    impairment: array(5) in [0,1]; 0 = healthy finger, 1 = no movement."""
+    impairment: array(N) in [0,1]; 0 = healthy finger, 1 = no movement."""
     t = np.arange(0, duration_s, 1 / FS)
-    angles = np.zeros((len(t), 5))
+    angles = np.zeros((len(t), N))
     for i, imp in enumerate(impairment):
         rest = MAX_ANGLE * 0.35 * imp                      # spasticity: can't fully open
         peak = rest + (MAX_ANGLE - rest) * (1 - imp) * rng.uniform(0.9, 1.0)
@@ -57,7 +58,7 @@ def simulate_session(impairment, duration_s=20):
 
 # ---------------------------------------------------------------- features
 def extract_features(angles):
-    """angles: (n_samples, 5) in degrees. Same function runs on real data."""
+    """angles: (n_samples, N) in degrees. Same function runs on real data."""
     feats = {}
     kernel = np.ones(5) / 5
     for i, f in enumerate(FINGERS):
@@ -85,10 +86,10 @@ def main(n_patients=40, days=56, every=4):
     raw_rows, feat_rows = [], []
     for p in range(1, n_patients + 1):
         pid = f"P{p:03d}"
-        base = np.clip(rng.uniform(0.3, 0.95) + rng.normal(0, 0.1, 5), 0.05, 1)
+        base = np.clip(rng.uniform(0.3, 0.95) + rng.normal(0, 0.1, N), 0.05, 1)
         k = rng.choice([rng.uniform(0.02, 0.05), rng.uniform(0.0, 0.01)], p=[0.8, 0.2])  # 20% slow responders
         for day in range(0, days + 1, every):
-            imp = np.clip(base * np.exp(-k * rng.uniform(0.7, 1.3, 5) * day), 0, 1)
+            imp = np.clip(base * np.exp(-k * rng.uniform(0.7, 1.3, N) * day), 0, 1)
             t, angles = simulate_session(imp)
             adc = angle_to_adc(angles)
             sid = f"{pid}_D{day:02d}"

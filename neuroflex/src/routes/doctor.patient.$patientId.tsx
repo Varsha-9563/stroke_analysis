@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { ArrowLeft, BrainCircuit, CalendarDays, Check, ClipboardPlus, RefreshCw, Sparkles } from "lucide-react";
+import { ArrowLeft, BrainCircuit, CalendarDays, Check, ClipboardPlus, HeartPulse, RefreshCw, Sparkles } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, EmptyState, LoadingState } from "@/components/ui";
-import { dischargePatient, getAllExercises, getPatientStreaks, getPatientSummary, recommendExercises } from "@/lib/api";
+import { AnalyticsPanel } from "@/components/analytics-panel";
+import { dischargePatient, downloadPatientCsv, setPatientGroup, getAllExercises, getPatientAnalytics, getPatientDataInfo, getPatientStreaks, getPatientSummary, recommendExercises } from "@/lib/api";
 
-const FINGERS = ["thumb", "index", "middle", "ring", "pinky"] as const;
+const FINGERS = ["index", "middle", "ring", "pinky"] as const;   // 4 flex sensors (no thumb)
 
 type Exercise = { id: number; name: string; description?: string; target_fingers: string };
 type Summary = {
@@ -13,6 +14,7 @@ type Summary = {
   patient_name?: string;
   full_name?: string;
   status?: string;
+  group?: string;
   doctor_name?: string;
   recovery_percent: number | null;
   weakest_finger: string | null;
@@ -26,7 +28,7 @@ type Streak = { date: string; completed: boolean };
 
 // "2026-09-27" -> local date (avoids the UTC off-by-one-day problem)
 const localDay = (iso: string) => new Date(iso.length === 10 ? `${iso}T00:00:00` : iso).toDateString();
-const fingerLabel = (f: string) => (f === "pinky" ? "Little" : f.charAt(0).toUpperCase() + f.slice(1));
+const fingerLabel = (f: string) => f.charAt(0).toUpperCase() + f.slice(1);
 
 export const Route = createFileRoute("/doctor/patient/$patientId")({
   head: () => ({
@@ -53,6 +55,7 @@ function PatientDetail() {
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [notice, setNotice] = useState<{ type: string; text: string } | null>(null);
+  const [reportKey, setReportKey] = useState(0);
 
   const load = useCallback(async () => {
     try {
@@ -96,8 +99,25 @@ function PatientDetail() {
   async function refresh() {
     setRefreshing(true);
     await load();
+    setReportKey((k) => k + 1);
     setRefreshing(false);
     notify("info", "Movement analysis refreshed.");
+  }
+
+  async function toggleHealthy() {
+    const next = summary?.group === "healthy" ? "patient" : "healthy";
+    const msg = next === "healthy"
+      ? "Mark this person as a HEALTHY VOLUNTEER? Their future recordings will be used as the healthy reference."
+      : "Change this person back to a stroke patient?";
+    if (!window.confirm(msg)) return;
+    try {
+      await setPatientGroup(patientId, next);
+      await load();
+      setReportKey((k) => k + 1);
+      notify("success", next === "healthy" ? "Marked as healthy volunteer." : "Marked as stroke patient.");
+    } catch {
+      notify("error", "Could not change the group.");
+    }
   }
 
   async function discharge() {
@@ -162,7 +182,7 @@ function PatientDetail() {
           <h1>{summary?.patient_name || summary?.full_name || `Patient NF-${patientId.padStart(4, "0")}`}</h1>
           <p>
             <span>ID: NF-{patientId.padStart(4, "0")}</span>
-            <span>{recovered ? "Recovered" : "Active recovery"}</span>
+            <span>{summary?.group === "healthy" ? "Healthy volunteer" : recovered ? "Recovered" : "Active recovery"}</span>
             <span>{summary?.doctor_name || "Assigned to your care"}</span>
           </p>
         </div>
@@ -171,7 +191,10 @@ function PatientDetail() {
             <RefreshCw className={refreshing ? "spin" : ""} />
             {refreshing ? "Refreshing" : "Refresh analysis"}
           </Button>
-          <Button variant="danger" onClick={discharge} disabled={recovered}>
+          <Button variant="secondary" onClick={toggleHealthy}>
+            <HeartPulse /> {summary?.group === "healthy" ? "Mark as patient" : "Mark as healthy volunteer"}
+          </Button>
+          <Button variant="danger" onClick={discharge} disabled={recovered || summary?.group === "healthy"}>
             <Check /> {recovered ? "Marked recovered" : "Mark recovered"}
           </Button>
         </div>
@@ -302,6 +325,15 @@ function PatientDetail() {
             )}
           </section>
         </>
+      )}
+
+      {hasAnalysis && (
+        <AnalyticsPanel
+          load={(days) => getPatientAnalytics(patientId, days)}
+          initialDays={30}
+          refreshKey={reportKey}
+          csv={{ info: () => getPatientDataInfo(patientId), download: (k) => downloadPatientCsv(patientId, k) }}
+        />
       )}
 
       {/* The plan can be set even before the first glove session */}
