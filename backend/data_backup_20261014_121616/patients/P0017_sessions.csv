@@ -1,0 +1,13 @@
+patient_id,patient_name,group,data_source,session_id,recorded_at,day,duration_s,readings,recovery_score,change_from_first,change_from_previous,pct_of_healthy,index_rom_deg,middle_rom_deg,ring_rom_deg,pinky_rom_deg,index_bends,middle_bends,ring_bends,pinky_bends,index_status,middle_status,ring_status,pinky_status,calibrated
+P0017,Sneha Kulkarni,patient,synthetic,284,2026-09-07T10:03:00,0,20.0,1000,25.3,0.0,,22.8,17.0,19.4,18.4,18.5,7,7,7,7,severe,severe,severe,severe,False
+P0017,Sneha Kulkarni,patient,synthetic,285,2026-09-10T10:55:00,3,20.0,1000,31.1,5.8,5.8,25.9,21.4,22.3,21.7,17.8,7,7,7,7,severe,severe,severe,severe,False
+P0017,Sneha Kulkarni,patient,synthetic,286,2026-09-13T10:26:00,6,20.0,1000,31.4,6.1,0.3,27.7,20.3,23.5,22.6,22.5,7,7,7,7,severe,severe,severe,severe,False
+P0017,Sneha Kulkarni,patient,synthetic,287,2026-09-16T10:50:00,9,20.0,1000,34.0,8.7,2.6,30.0,24.0,24.9,26.7,20.9,7,8,8,7,severe,severe,severe,severe,False
+P0017,Sneha Kulkarni,patient,synthetic,288,2026-09-19T10:02:00,12,20.0,1000,38.0,12.7,4.0,32.0,25.4,25.9,27.2,24.2,8,8,8,7,severe,severe,severe,severe,False
+P0017,Sneha Kulkarni,patient,synthetic,289,2026-09-22T10:05:00,15,20.0,1000,37.7,12.4,-0.3,33.0,26.4,28.5,26.4,24.9,8,8,8,7,severe,moderate,severe,severe,False
+P0017,Sneha Kulkarni,patient,synthetic,290,2026-09-25T10:40:00,18,20.0,1000,40.2,14.9,2.5,35.8,29.7,32.6,28.0,24.7,8,8,8,8,moderate,moderate,severe,severe,False
+P0017,Sneha Kulkarni,patient,synthetic,291,2026-09-28T10:39:00,21,20.0,1000,45.0,19.7,4.8,39.3,33.0,31.1,33.3,28.9,8,8,8,8,moderate,moderate,moderate,moderate,False
+P0017,Sneha Kulkarni,patient,synthetic,292,2026-10-01T10:21:00,24,20.0,1000,46.4,21.1,1.4,39.3,31.6,33.6,29.8,31.1,8,8,8,8,moderate,moderate,moderate,moderate,False
+P0017,Sneha Kulkarni,patient,synthetic,293,2026-10-04T10:49:00,27,20.0,1000,47.0,21.7,0.6,41.2,32.5,33.4,33.8,32.7,8,8,9,8,moderate,moderate,moderate,moderate,False
+P0017,Sneha Kulkarni,patient,synthetic,294,2026-10-05T10:31:00,28,20.0,1000,50.0,24.7,3.0,44.1,34.1,37.0,37.0,33.4,8,9,9,8,moderate,moderate,moderate,moderate,False
+P0017,Sneha Kulkarni,patient,synthetic,295,2026-10-06T10:38:00,29,20.0,1000,48.7,23.4,-1.3,44.6,34.9,38.3,37.6,32.5,9,9,9,8,moderate,moderate,moderate,moderate,False

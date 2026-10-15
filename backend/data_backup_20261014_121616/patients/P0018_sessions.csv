@@ -1,0 +1,7 @@
+patient_id,patient_name,group,data_source,session_id,recorded_at,day,duration_s,readings,recovery_score,change_from_first,change_from_previous,pct_of_healthy,index_rom_deg,middle_rom_deg,ring_rom_deg,pinky_rom_deg,index_bends,middle_bends,ring_bends,pinky_bends,index_status,middle_status,ring_status,pinky_status,calibrated
+P0018,Imran Khan,patient,synthetic,296,2026-09-23T10:33:00,0,20.0,1000,10.7,0.0,,13.2,8.2,13.6,11.8,8.8,0,6,6,0,severe,severe,severe,severe,False
+P0018,Imran Khan,patient,synthetic,297,2026-09-26T10:27:00,3,20.0,1000,11.5,0.8,0.8,13.9,8.0,11.0,12.9,12.9,0,6,6,6,severe,severe,severe,severe,False
+P0018,Imran Khan,patient,synthetic,298,2026-09-29T10:00:00,6,20.0,1000,11.1,0.4,-0.4,15.4,8.0,15.2,16.0,10.3,0,6,7,6,severe,severe,severe,severe,False
+P0018,Imran Khan,patient,synthetic,299,2026-10-02T10:11:00,9,20.0,1000,14.2,3.5,3.1,16.9,11.0,18.4,14.6,10.3,6,7,6,6,severe,severe,severe,severe,False
+P0018,Imran Khan,patient,synthetic,300,2026-10-05T10:14:00,12,20.0,1000,16.8,6.1,2.6,18.3,8.7,18.5,16.7,14.9,8,7,7,7,severe,severe,severe,severe,False
+P0018,Imran Khan,patient,synthetic,301,2026-10-06T10:43:00,13,20.0,1000,21.6,10.9,4.8,18.9,11.0,16.5,17.6,15.6,6,7,7,6,severe,severe,severe,severe,False

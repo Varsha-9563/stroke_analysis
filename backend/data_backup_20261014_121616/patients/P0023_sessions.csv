@@ -1,0 +1,4 @@
+patient_id,patient_name,group,data_source,session_id,recorded_at,day,duration_s,readings,recovery_score,change_from_first,change_from_previous,pct_of_healthy,index_rom_deg,middle_rom_deg,ring_rom_deg,pinky_rom_deg,index_bends,middle_bends,ring_bends,pinky_bends,index_status,middle_status,ring_status,pinky_status,calibrated
+P0023,nikitha,healthy,glove,315,2026-10-13T16:33:03,0,19.9,1000,62.4,0.0,,,79.7,18.3,33.4,53.2,8,4,9,8,good,moderate,moderate,good,True
+P0023,nikitha,healthy,glove,316,2026-10-13T16:33:32,0,20.8,1050,64.9,2.5,2.5,,76.9,12.9,44.6,58.7,11,6,10,10,good,moderate,moderate,good,True
+P0023,nikitha,healthy,glove,317,2026-10-13T16:34:01,0,19.4,1000,63.1,0.7,-1.8,,76.9,0.0,47.7,63.9,8,3,6,8,good,moderate,moderate,good,True

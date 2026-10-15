@@ -1,0 +1,4 @@
+patient_id,patient_name,group,data_source,session_id,recorded_at,day,duration_s,readings,recovery_score,change_from_first,change_from_previous,pct_of_healthy,index_rom_deg,middle_rom_deg,ring_rom_deg,pinky_rom_deg,index_bends,middle_bends,ring_bends,pinky_bends,index_status,middle_status,ring_status,pinky_status,calibrated
+P0020,Varsha,healthy,glove,303,2026-10-07T14:43:39,0,20.9,1050,94.9,0.0,,,102.4,44.4,114.9,66.8,8,6,8,8,good,moderate,good,good,True
+P0020,Varsha,healthy,glove,307,2026-10-07T14:57:30,0,19.6,1000,95.5,0.6,0.6,,97.7,130.0,75.2,70.8,8,5,8,5,good,good,good,good,True
+P0020,Varsha,healthy,glove,308,2026-10-07T14:58:25,0,19.7,1000,95.5,0.6,0.0,,99.3,97.1,68.7,81.0,10,6,10,9,good,good,good,good,True

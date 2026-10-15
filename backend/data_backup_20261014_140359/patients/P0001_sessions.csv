@@ -1,0 +1,4 @@
+patient_id,patient_name,group,data_source,session_id,recorded_at,day,duration_s,readings,recovery_score,change_from_first,change_from_previous,pct_of_healthy,index_rom_deg,middle_rom_deg,ring_rom_deg,pinky_rom_deg,index_bends,middle_bends,ring_bends,pinky_bends,index_status,middle_status,ring_status,pinky_status,calibrated
+P0001,Healthy Volunteer 1,healthy,synthetic,1,2026-10-06T15:20:00,0,20.0,1000,96.3,0.0,,,82.7,78.8,74.7,77.6,12,12,12,12,good,good,good,good,False
+P0001,Healthy Volunteer 1,healthy,synthetic,2,2026-10-07T15:09:00,1,20.0,1000,96.0,-0.3,-0.3,,81.8,80.9,79.4,81.4,12,12,12,12,good,good,good,good,False
+P0001,Healthy Volunteer 1,healthy,synthetic,3,2026-10-13T15:25:00,7,20.0,1000,95.9,-0.4,-0.1,,79.0,77.7,77.3,84.7,12,12,12,12,good,good,good,good,False

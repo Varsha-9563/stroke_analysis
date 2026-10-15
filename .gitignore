@@ -27,8 +27,7 @@ node_modules/
 Thumbs.db
 
 # patient data recorded by the glove (CSV logs) - never push to GitHub
-backend/data/
-backend/data_backup_*/
+
 # Temporary scratchpads and scripts
 backend_code.txt
 neuroflex_code.txt

@@ -1,0 +1,2 @@
+patient_id,patient_name,group,data_source,session_id,recorded_at,day,duration_s,readings,recovery_score,change_from_first,change_from_previous,pct_of_healthy,index_rom_deg,middle_rom_deg,ring_rom_deg,pinky_rom_deg,index_bends,middle_bends,ring_bends,pinky_bends,index_status,middle_status,ring_status,pinky_status,calibrated
+P0025,Varun,healthy,glove,321,2026-10-14T01:29:40,0,19.5,1000,89.6,0.0,,,71.7,130.0,41.1,47.8,18,9,15,4,good,good,good,good,True

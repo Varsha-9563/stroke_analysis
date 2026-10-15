@@ -1,0 +1,23 @@
+patient_id,patient_name,group,data_source,session_id,recorded_at,day,duration_s,readings,recovery_score,change_from_first,change_from_previous,pct_of_healthy,index_rom_deg,middle_rom_deg,ring_rom_deg,pinky_rom_deg,index_bends,middle_bends,ring_bends,pinky_bends,index_status,middle_status,ring_status,pinky_status,calibrated
+P0016,Rahul Verma,patient,synthetic,262,2026-08-15T10:11:00,0,20.0,1000,10.5,0.0,,13.5,8.1,11.6,13.3,10.5,0,6,6,6,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,263,2026-08-18T10:41:00,3,20.0,1000,11.2,0.7,0.7,14.9,12.8,11.1,12.4,11.4,6,6,6,6,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,264,2026-08-21T10:52:00,6,20.0,1000,11.0,0.5,-0.2,14.5,11.0,15.1,12.4,8.1,6,6,6,0,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,265,2026-08-24T10:22:00,9,20.0,1000,10.9,0.4,-0.1,14.1,9.2,15.2,12.6,8.5,6,6,6,0,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,266,2026-08-27T10:20:00,12,20.0,1000,10.9,0.4,0.0,14.5,11.3,13.8,13.6,8.0,6,6,6,0,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,267,2026-08-30T10:14:00,15,20.0,1000,13.9,3.4,3.0,16.8,13.9,12.8,14.0,13.1,6,6,6,6,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,268,2026-09-02T10:23:00,18,20.0,1000,11.1,0.6,-2.8,15.7,11.0,17.1,12.0,10.3,6,7,6,6,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,269,2026-09-05T10:08:00,21,20.0,1000,22.7,12.2,11.6,18.9,13.7,19.2,13.6,14.4,6,7,6,6,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,270,2026-09-08T10:35:00,24,20.0,1000,21.1,10.6,-1.6,18.8,13.4,15.6,15.8,15.7,6,6,7,6,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,271,2026-09-11T10:58:00,27,20.0,1000,23.8,13.3,2.7,19.2,12.5,19.8,16.9,12.5,6,7,7,6,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,272,2026-09-14T10:23:00,30,20.0,1000,24.2,13.7,0.4,20.7,18.6,19.5,17.4,11.1,7,7,6,6,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,273,2026-09-17T10:53:00,33,20.0,1000,24.6,14.1,0.4,20.4,14.9,20.7,16.8,13.4,6,7,7,6,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,274,2026-09-20T10:53:00,36,20.0,1000,24.0,13.5,-0.6,21.3,15.9,21.8,18.0,13.0,6,7,7,6,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,275,2026-09-23T10:16:00,39,20.0,1000,25.1,14.6,1.1,23.0,18.7,21.0,17.8,16.5,7,7,7,7,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,276,2026-09-26T10:15:00,42,20.0,1000,26.5,16.0,1.4,24.6,17.2,22.9,20.5,18.4,7,7,7,7,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,277,2026-09-29T10:03:00,45,20.0,1000,25.2,14.7,-1.3,22.7,18.8,21.6,18.0,14.6,7,7,7,6,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,278,2026-10-02T10:02:00,48,20.0,1000,26.8,16.3,1.6,24.9,17.3,22.4,23.0,17.5,7,7,7,7,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,279,2026-10-05T10:06:00,51,20.0,1000,27.1,16.6,0.3,24.2,17.8,21.1,23.2,15.8,7,7,7,7,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,280,2026-10-08T10:36:00,54,20.0,1000,25.2,14.7,-1.9,22.9,17.5,20.3,20.1,15.8,7,7,7,7,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,281,2026-10-11T10:51:00,57,20.0,1000,31.0,20.5,5.8,26.1,18.7,24.8,22.4,18.1,7,7,7,7,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,282,2026-10-12T10:40:00,58,20.0,1000,31.1,20.6,0.1,27.3,23.3,25.4,19.5,19.5,7,7,7,7,severe,severe,severe,severe,False
+P0016,Rahul Verma,patient,synthetic,283,2026-10-13T10:58:00,59,20.0,1000,29.9,19.4,-1.2,25.8,21.1,22.0,22.9,16.9,7,7,7,7,severe,severe,severe,severe,False
