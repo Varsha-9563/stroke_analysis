@@ -5,6 +5,8 @@ import axios from "axios";
 //   VITE_API_URL=http://192.168.1.50:8000
 export const API_URL = import.meta.env["VITE_API_URL"] || "http://127.0.0.1:8000";
 
+export const dismissMessage = (id: number) => api.delete(`/api/patient/messages/${id}`);
+export const sendOtp = (data: { email: string }) => api.post("/api/auth/send-otp", data);
 const api = axios.create({ baseURL: API_URL });
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
@@ -80,3 +82,5 @@ export const setPatientGroup = (pid: string, group: "patient" | "healthy") =>
   api.put(`/api/doctor/patients/${pid}/group`, { group });
 export const downloadAllSessionsCsv = () => fetchCsv("/api/doctor/data/all_sessions.csv");
 export const downloadHealthyCsv = () => fetchCsv("/api/doctor/data/healthy_reference.csv");
+export const getDoctorAlerts = () => api.get("/api/doctor/alerts");
+export const dismissDoctorAlert = (id: number) => api.delete(`/api/doctor/alerts/${id}`);

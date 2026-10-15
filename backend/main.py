@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+import random
 
 from analysis import analyze_session
 from analytics import router as analytics_router
@@ -103,6 +104,25 @@ def auth_response(user: User):
 
 
 # ================================================================ auth
+_otp_store = {}  # temporary memory to store { "email@example.com": "123456" }
+
+class OTPBody(BaseModel):
+    email: str
+
+@app.post("/api/auth/send-otp")
+def send_registration_otp(body: OTPBody, background: BackgroundTasks):
+    email = body.email.lower().strip()
+    code = f"{random.randint(100000, 999999)}"
+    _otp_store[email] = code
+    
+    # Send email in the background so the user doesn't wait
+    email_text = f"Your NeuroFlex registration code is: {code}\n\nUse this to complete your account setup."
+    background.add_task(send_email, email, "NeuroFlex Verification Code", email_text)
+    return {"ok": True}
+
+
+
+
 class LoginBody(BaseModel):
     email: str
     password: str
@@ -115,6 +135,7 @@ class RegisterBody(BaseModel):
     role: str                         # "doctor" or "patient"
     doctor_id: Optional[int] = None   # required for patients
     specialization: Optional[str] = None
+    otp: str
 
 
 @app.get("/")
@@ -133,6 +154,11 @@ def login_json(body: LoginBody, db: Session = Depends(get_db)):
 @app.post("/api/auth/register")
 def register(body: RegisterBody, db: Session = Depends(get_db)):
     email = body.email.lower().strip()
+    
+    # 1. Verify OTP first
+    if _otp_store.get(email) != body.otp.strip():
+        raise HTTPException(400, "Invalid or expired verification code")
+        
     if body.role not in ("doctor", "patient"):
         raise HTTPException(400, "Role must be doctor or patient")
     if len(body.password) < 6:
@@ -152,6 +178,10 @@ def register(body: RegisterBody, db: Session = Depends(get_db)):
     if body.role == "patient":
         db.add(Patient(user_id=user.id, doctor_id=body.doctor_id))
     db.commit()
+    
+    # Clean up the used OTP
+    _otp_store.pop(email, None)
+    
     return auth_response(user)
 
 
@@ -257,15 +287,16 @@ class RecommendBody(BaseModel):
 
 
 @app.post("/api/doctor/recommend")
-def recommend(body: RecommendBody, doctor: User = Depends(require_doctor),
-              db: Session = Depends(get_db)):
-    """Saves the patient's exercise plan. The ticked list REPLACES the old plan;
-    removed exercises are switched off but their history is kept."""
+def recommend(body: RecommendBody, doctor: User = Depends(require_doctor), db: Session = Depends(get_db)):
+    print(f"\n--- DOCTOR SAVE TRIGGERED ---")
+    print(f"Notes received: '{body.notes}'")
+    
     p = get_patient_for_doctor(db, body.patient_id, doctor)
     wanted = set(body.exercise_ids)
-    valid = {e.id for e in db.query(Exercise).filter(Exercise.id.in_(wanted)).all()}
-    if wanted - valid:
-        raise HTTPException(400, f"Unknown exercise id(s): {sorted(wanted - valid)}")
+    
+    valid = {e.id: e.name for e in db.query(Exercise).filter(Exercise.id.in_(wanted)).all()}
+    if wanted - set(valid.keys()):
+        raise HTTPException(400, f"Unknown exercise id(s)")
 
     current = {rx.exercise_id: rx for rx in active_prescriptions(p)}
     for ex_id, rx in current.items():
@@ -275,9 +306,29 @@ def recommend(body: RecommendBody, doctor: User = Depends(require_doctor),
             rx.active = False
     for ex_id in wanted - current.keys():
         db.add(Prescription(patient_id=p.id, exercise_id=ex_id, notes=body.notes))
-    db.commit()
-    return {"ok": True, "exercise_ids": sorted(wanted)}
+        
+    # ========================================================
+    # DIAGNOSTIC NOTIFICATION LOGIC
+    # ========================================================
+    if wanted:
+        ex_list = ", ".join(valid[i] for i in wanted)
+        patient_msg = f"Dr. {doctor.name} updated your treatment plan. Please complete: {ex_list}."
+        
+        if body.notes and body.notes.strip():
+            patient_msg += f" Note: {body.notes.strip()}"
+            
+        print(f"CREATING MESSAGE: {patient_msg}")
+        
+        new_msg = Message(patient_id=p.id, sender_id=doctor.id, text=patient_msg)
+        db.add(new_msg)
+        print("MESSAGE ADDED TO DATABASE SESSION")
+    else:
+        print("NO EXERCISES WANTED - SKIPPING MESSAGE")
+    # ========================================================
 
+    db.commit()
+    print(f"--- SAVE COMPLETE ---\n")
+    return {"ok": True, "exercise_ids": sorted(wanted)}
 
 class DischargeBody(BaseModel):
     patient_id: int
@@ -352,8 +403,60 @@ def streak_check(body: StreakBody, user: User = Depends(require_patient),
     db.commit()
 
     db.refresh(p)
-    return {"ok": True, "completed": body.completed, "current_streak": current_streak(p)}
+    new_streak = current_streak(p)
+    
+    # ========================================================
+    # NEW NOTIFICATION LOGIC (Adherence Milestones)
+    # ========================================================
+    if body.completed:
+        if new_streak in [7, 14, 30]: 
+            msg_text = f"CONSISTENCY: {user.name} just hit a {new_streak}-day exercise streak!"
+            db.add(Message(patient_id=p.id, sender_id=user.id, text=msg_text))
+            db.commit()
+    # ========================================================
 
+    return {"ok": True, "completed": body.completed, "current_streak": new_streak}
+
+
+@app.post("/api/doctor/recommend")
+def recommend(body: RecommendBody, doctor: User = Depends(require_doctor),
+              db: Session = Depends(get_db)):
+    """Saves the patient's exercise plan. The ticked list REPLACES the old plan;
+    removed exercises are switched off but their history is kept."""
+    p = get_patient_for_doctor(db, body.patient_id, doctor)
+    wanted = set(body.exercise_ids)
+    
+    # We now fetch the names of the exercises so we can tell the patient what to do
+    valid = {e.id: e.name for e in db.query(Exercise).filter(Exercise.id.in_(wanted)).all()}
+    if wanted - set(valid.keys()):
+        raise HTTPException(400, f"Unknown exercise id(s)")
+
+    current = {rx.exercise_id: rx for rx in active_prescriptions(p)}
+    for ex_id, rx in current.items():
+        if ex_id in wanted:
+            rx.notes = body.notes
+        else:
+            rx.active = False
+    for ex_id in wanted - current.keys():
+        db.add(Prescription(patient_id=p.id, exercise_id=ex_id, notes=body.notes))
+        
+    # ========================================================
+    # NEW NOTIFICATION LOGIC (Patient Communication)
+    # ========================================================
+    if wanted:
+        ex_list = ", ".join(valid[i] for i in wanted)
+        patient_msg = f"Dr. {doctor.name} updated your treatment plan. Please complete: {ex_list}."
+        
+        # Use += to append the note instead of overwriting the message
+        if body.notes and body.notes.strip():
+            patient_msg += f" Note: {body.notes.strip()}"
+            
+        # This db.add is now safely un-indented so it ALWAYS runs!
+        db.add(Message(patient_id=p.id, sender_id=doctor.id, text=patient_msg))
+    # ========================================================
+
+    db.commit()
+    return {"ok": True, "exercise_ids": sorted(wanted)}
 
 @app.get("/api/patient/recovery")
 def patient_recovery(user: User = Depends(require_patient), db: Session = Depends(get_db)):
@@ -463,13 +566,27 @@ def glove_upload(data: GloveData, db: Session = Depends(get_db)):
     p = db.query(Patient).filter(Patient.device_id == data.device_id).first()
     if not p:
         raise HTTPException(404, f"No patient is assigned glove '{data.device_id}'")
+        
     check_samples(data.samples)
     dev = db.get(GloveDevice, data.device_id)
     result = analyze_session(data.samples, dev.calibration if dev else None)
+    
+    score = result["recovery_score"]
+    
+    # --- NEW: DOCTOR ALERT LOGIC ---
+    last_session = db.query(GloveSession).filter(GloveSession.patient_id == p.id).order_by(GloveSession.recorded_at.desc()).first()
+    
+    if score >= 85 and (not last_session or last_session.recovery_score < 85):
+        db.add(Message(patient_id=p.id, sender_id=p.user_id, text=f"🎉 Milestone: {p.user.name} just hit {score:.1f}% recovery!"))
+    elif last_session and (last_session.recovery_score - score) >= 5:
+        drop = last_session.recovery_score - score
+        db.add(Message(patient_id=p.id, sender_id=p.user_id, text=f"⚠️ Alert: {p.user.name}'s score dropped by {drop:.1f}% today."))
+    # -------------------------------
+    
     s = GloveSession(
         patient_id=p.id,
         data_source="glove",
-        recovery_score=result["recovery_score"],
+        recovery_score=score,
         finger_status=result["finger_status"],
         range_of_motion=result["range_of_motion"],
         features=result["features"],
@@ -478,7 +595,7 @@ def glove_upload(data: GloveData, db: Session = Depends(get_db)):
     db.add(s)
     db.commit()
     db.refresh(p)
-    log_session(p, s, data.samples, result, dev.calibration if dev else None)   # append to CSV files
+    log_session(p, s, data.samples, result, dev.calibration if dev else None)
     return {"patient": p.user.name, "session_id": s.id, **{k: result[k] for k in
             ("recovery_score", "finger_status", "range_of_motion", "suggested_exercises")}}
 
@@ -488,3 +605,35 @@ def analyze(data: GloveData):
     """Analyse without saving (handy for testing)."""
     check_samples(data.samples)
     return analyze_session(data.samples)
+@app.delete("/api/patient/messages/{msg_id}")
+def delete_message(msg_id: int, user: User = Depends(require_patient), db: Session = Depends(get_db)):
+    p = get_my_patient(db, user)
+    msg = db.get(Message, msg_id)
+    if msg and msg.patient_id == p.id:
+        db.delete(msg)
+        db.commit()
+    return {"ok": True}
+
+# ========================================================
+# DOCTOR CLINICAL ALERTS
+# ========================================================
+@app.get("/api/doctor/alerts")
+def get_doctor_alerts(doctor: User = Depends(require_doctor), db: Session = Depends(get_db)):
+    patients = db.query(Patient).filter(Patient.doctor_id == doctor.id).all()
+    p_ids = [p.id for p in patients]
+    
+    # Fetch messages where the patient is the sender, meaning it's a system alert
+    alerts = db.query(Message).filter(
+        Message.patient_id.in_(p_ids), 
+        Message.sender_id != doctor.id
+    ).order_by(Message.created_at.desc()).all()
+    
+    return {"alerts": [{"id": a.id, "text": a.text, "created_at": a.created_at.isoformat()} for a in alerts]}
+
+@app.delete("/api/doctor/alerts/{msg_id}")
+def delete_doctor_alert(msg_id: int, doctor: User = Depends(require_doctor), db: Session = Depends(get_db)):
+    msg = db.get(Message, msg_id)
+    if msg:
+        db.delete(msg)
+        db.commit()
+    return {"ok": True}

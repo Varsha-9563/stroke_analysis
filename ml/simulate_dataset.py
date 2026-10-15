@@ -17,7 +17,7 @@ import pandas as pd
 
 rng = np.random.default_rng(42)
 
-FINGERS = ["index", "middle", "ring", "little"]   # 4 flex sensors (no thumb)
+FINGERS = ["index", "middle", "ring", "pinky"]   # 4 flex sensors (no thumb)
 N = len(FINGERS)
 FS = 50                       # Hz, same as firmware
 VCC, R_FIXED = 3.3, 47_000    # voltage divider

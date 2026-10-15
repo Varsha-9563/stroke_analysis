@@ -220,7 +220,7 @@ function PatientHome() {
         </article>
       </section>
 
-      {messages.length > 0 && (
+      {/* {messages.length > 0 && (
         <section className="panel">
           <div className="panel-heading">
             <div>
@@ -240,7 +240,7 @@ function PatientHome() {
             ))}
           </ul>
         </section>
-      )}
+      )} */}
     </div>
   );
 }
