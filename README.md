@@ -138,11 +138,11 @@ Install the following before running the project:
 ### 1. Clone the Repository
 
 ```bash
-git clone <YOUR_GITHUB_REPOSITORY_URL>
+git clone[<YOUR_GITHUB_REPOSITORY_URL>](https://github.com/Varsha-9563/stroke_analysis)
 cd stroke_analysis
 ```
 
-Replace `<YOUR_GITHUB_REPOSITORY_URL>` with your repository URL.
+
 
 ### 2. Set Up the Python Environment
 
