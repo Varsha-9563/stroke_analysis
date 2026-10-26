@@ -138,7 +138,7 @@ Install the following before running the project:
 ### 1. Clone the Repository
 
 ```bash
-git clone[<YOUR_GITHUB_REPOSITORY_URL>](https://github.com/Varsha-9563/stroke_analysis)
+git clone https://github.com/Varsha-9563/stroke_analysis
 cd stroke_analysis
 ```
 
